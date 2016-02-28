@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calculating if it's better to buy or rent</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Calculating if it's better to buy or rent">
+  <meta name="author" content="Sigurdur Smari Sigurdsson">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Calculating if it's better to buy or rent</h1>
+    <h2></h2>
+    <p>Sigurdur Smari Sigurdsson<br/>Risk management</p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:;">
+  <hgroup>
+    <h2>Variables that need to be considered</h2>
+  </hgroup>
+  <article data-timings="">
+    
+<div style='float:left;width:48%;' class='centered'>
+  <ul>
+<li>Value of the property</li>
+<li>Expected increase in the value of property over the investment horizon</li>
+<li>Years of planned ownership
+
+<ul>
+<li>Generally it&#39;s better to buy if you plan to own the property for longer than 10 years.</li>
+</ul></li>
+<li>Yield requirement (in %)
+
+<ul>
+<li>E.g. what return you can expect on your savings.</li>
+</ul></li>
+<li>Cost of maintenance, insurance and other yearly fees </li>
+</ul>
+
+</div>
+<div style='float:right;width:48%;'>
+  <ul>
+<li>Cost of selling
+
+<ul>
+<li>This is what the real estate agent gets</li>
+</ul></li>
+<li>Loan amount</li>
+<li>Interest rate of the loan</li>
+<li>Initial lending cost </li>
+<li>Years until maturity of the loan</li>
+<li>Collateral paid to the rentor
+
+<ul>
+<li>The rentor returns the collateral when you leave the property</li>
+</ul></li>
+<li>Annual rent of a similar property</li>
+<li>Annual expected increase in rent</li>
+</ul>
+
+</div>
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h2>The function</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>The function below calculates which is better</p>
+
+<pre><code class="r">npv_calc &lt;- function(price,price_incr,years_p,yield,cost_m,cost_s,amt_l,int,
+                cost_l,years_l,rent_coll,rent,rent_incr) {
+  price_incr &lt;- price_incr/100
+  yield &lt;- yield/100
+  int &lt;- int/100
+  rent_incr &lt;- rent_incr/100
+  cost_s &lt;- cost_s/100
+  cost_l &lt;- cost_l/100
+  cost_m &lt;- cost_m/100
+
+  CF &lt;- vector(mode=&quot;numeric&quot;, length=0)
+  outc &lt;- vector(mode=&quot;numeric&quot;, length=0)
+  CF[1] &lt;- -(price - amt_l) - amt_l*cost_l
+  for (i in 1:(years_p-1)) 
+  {
+    CF[i+1] &lt;- -price*cost_m-(amt_l-amt_l/ 
+                                years_l*(i-1))*int-amt_l/years_l
+  }
+  CF[years_p+1] &lt;- price*(1+price_incr)*(1-cost_s)-price*cost_m-(amt_l-amt_l/years_l*(years_p-1))*(1+int)
+
+  outc$npv_p &lt;- round(npv(yield,CF))
+
+  CF_r &lt;- vector(mode=&quot;numeric&quot;, length=0)
+  CF_r[1] &lt;- -rent_coll
+  for (i in 1:(years_p-1)) 
+  {
+    CF_r[i+1] &lt;- -rent*(1+rent_incr*(i-1))+(price-amt_l-rent_coll)*((1+yield)^i-(1+yield)^(i-1))
+  }
+
+  CF_r[years_p+1] &lt;- -rent*(1+rent_incr*(years_p-1))+(price-amt_l-rent_coll)*((1+yield)^years_p-(1+yield)^(years_p-1))+rent_coll
+
+  outc$npv_r &lt;- round(npv(yield,CF_r))
+
+  out &lt;- if (outc$npv_p &gt; outc$npv_r) {
+    paste0(&quot;It&#39;s &quot;,format(outc$npv_p-outc$npv_r,big.mark = &quot;,&quot;),&quot; cheaper to buy property&quot;)
+    }
+    else {
+    paste0(&quot;It&#39;s &quot;,format(outc$npv_r-outc$npv_p,big.mark = &quot;,&quot;),&quot; cheaper to rent property&quot;)
+    }
+
+  return(out)
+}
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h2>Example</h2>
+  </hgroup>
+  <article data-timings="">
+    <p>Let&#39;s find out if it&#39;s better to buy or rent a property that costs ISK 35 million. </p>
+
+<div style='float:left;width:48%;' class='centered'>
+  <ul>
+<li>Value of the property = ISK 35 million</li>
+<li>Expected increase in the value of property over the investment horizon = 20%</li>
+<li>Years of planned ownership = 10 years</li>
+<li>Yield requirement = 6%</li>
+<li>Cost of maintenance, insurance and other yearly fees = 2%</li>
+<li>Cost of selling = 2%</li>
+<li>Loan amount = ISK 20 million</li>
+</ul>
+
+</div>
+<div style='float:right;width:48%;'>
+  <ul>
+<li>Interest rate of the loan = 7%</li>
+<li>Initial lending cost = 1%</li>
+<li>Years until maturity of the loan = 40</li>
+<li>Collateral paid to the rentor = ISK 200 thousand</li>
+<li>Annual rent of a similar property = ISK 2.4 million</li>
+<li>Annual expected increase in rent = 4%</li>
+</ul>
+
+</div>
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h2>The result</h2>
+  </hgroup>
+  <article data-timings="">
+    <h1>Given the values on the previous slide the result is that</h1>
+
+<pre><code class="r">library(FinCal)
+npv_calc(price=35000000,price_incr=20,years_p=10,yield=6,cost_m=2,cost_s=2,
+         amt_l=20000000,int=7,cost_l=1,years_l=40,rent_coll=200000,rent=2400000,rent_incr=4)
+</code></pre>
+
+<pre><code>## [1] &quot;It&#39;s 6,475,544 cheaper to rent property&quot;
+</code></pre>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='Variables that need to be considered'>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='The function'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Example'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='The result'>
+         4
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
